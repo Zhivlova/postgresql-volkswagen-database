@@ -8,7 +8,7 @@
 
 
 -- ============================================================
--- Types
+-- Типы
 -- ============================================================
 
 CREATE TYPE transmission_type AS ENUM (
@@ -41,7 +41,7 @@ CREATE TYPE body_type AS ENUM (
 
 
 -- ============================================================
--- Common updated_at trigger
+-- Общий триггер для updated_at
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -56,7 +56,7 @@ $$;
 
 
 -- ============================================================
--- Cars
+-- Автомобили
 -- ============================================================
 
 CREATE TABLE cars (
@@ -75,7 +75,7 @@ CREATE TABLE cars (
 
 
 -- ============================================================
--- Profiles
+-- Профили автомобилей
 -- ============================================================
 
 CREATE TABLE profiles (
@@ -131,7 +131,7 @@ EXECUTE FUNCTION update_updated_at_column();
 
 
 -- ============================================================
--- Dealers
+-- Дилеры
 -- ============================================================
 
 CREATE TABLE dealers (
@@ -163,7 +163,7 @@ CREATE TABLE dealers (
 
 
 -- ============================================================
--- Cars <-> Dealers
+-- Автомобили <-> Дилеры
 -- ============================================================
 
 CREATE TABLE cars_dealers (
@@ -189,7 +189,7 @@ CREATE INDEX idx_cars_dealers_dealer_id
 
 
 -- ============================================================
--- Photo albums
+-- Фотоальбомы
 -- ============================================================
 
 CREATE TABLE photo_albums (
@@ -218,7 +218,7 @@ CREATE INDEX idx_photo_albums_car_id
 
 
 -- ============================================================
--- Media types
+-- Типы медиа
 -- ============================================================
 
 CREATE TABLE media_types (
@@ -241,7 +241,7 @@ EXECUTE FUNCTION update_updated_at_column();
 
 
 -- ============================================================
--- Media
+-- Медиафайлы
 --
 -- storage_key содержит путь / ключ объекта в S3.
 -- ============================================================
@@ -293,9 +293,8 @@ EXECUTE FUNCTION update_updated_at_column();
 
 
 -- ============================================================
--- Album <-> Media
+-- Альбомы <-> Медиафайлы
 --
--- Связь media с альбомами.
 -- car_id используется для обеспечения целостности данных:
 -- media одного автомобиля нельзя добавить в альбом другого.
 -- ============================================================
@@ -328,7 +327,7 @@ CREATE INDEX idx_album_media_car_id
 
 
 -- ============================================================
--- Services
+-- Сервис
 -- ============================================================
 
 CREATE TABLE services (
@@ -342,7 +341,7 @@ CREATE TABLE services (
 
 
 -- ============================================================
--- Cars <-> Services
+-- Автомобили <-> Услуги сервиса
 -- ============================================================
 
 CREATE TABLE cars_services (
@@ -370,7 +369,7 @@ CREATE INDEX idx_cars_services_service_id
 
 
 -- ============================================================
--- Clients
+-- Клиенты
 -- ============================================================
 
 CREATE TABLE clients (
@@ -411,7 +410,7 @@ EXECUTE FUNCTION update_updated_at_column();
 
 
 -- ============================================================
--- Cars <-> Clients
+-- Автомобили <-> Клиенты
 --
 -- Один клиент может быть связан с несколькими автомобилями,
 -- а один автомобиль — с несколькими клиентами.
@@ -452,7 +451,7 @@ EXECUTE FUNCTION update_updated_at_column();
 
 
 -- ============================================================
--- Features
+-- Дополнительное оборудование
 -- ============================================================
 
 CREATE TABLE features (
@@ -466,7 +465,7 @@ CREATE TABLE features (
 
 
 -- ============================================================
--- Cars <-> Features
+-- Автомобили <-> Дополнительное оборудование
 -- ============================================================
 
 CREATE TABLE cars_features (
@@ -490,6 +489,74 @@ CREATE TABLE cars_features (
 CREATE INDEX idx_cars_features_feature_id
     ON cars_features(feature_id);
 
+-- ============================================================
+-- Продажи
+-- ============================================================
+
+CREATE TABLE sales (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    car_id BIGINT NOT NULL,
+
+    client_id BIGINT NOT NULL,
+
+    dealer_id BIGINT NOT NULL,
+
+    sale_price NUMERIC(12, 2) NOT NULL,
+
+    sold_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_sales_car
+        FOREIGN KEY (car_id)
+        REFERENCES cars(id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_sales_client
+        FOREIGN KEY (client_id)
+        REFERENCES clients(id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_sales_dealer
+        FOREIGN KEY (dealer_id)
+        REFERENCES dealers(dealer_id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT chk_sales_price
+        CHECK (sale_price >= 0),
+
+    CONSTRAINT uq_sales_car
+        UNIQUE (car_id)
+);
+
+CREATE INDEX idx_cars_dealers_dealer_id
+    ON cars_dealers(dealer_id);
+
+CREATE INDEX idx_cars_clients_client_id
+    ON cars_clients(client_id);
+
+CREATE INDEX idx_cars_services_service_id
+    ON cars_services(service_id);
+
+CREATE INDEX idx_cars_features_feature_id
+    ON cars_features(feature_id);
+
+CREATE INDEX idx_photo_albums_car_id
+    ON photo_albums(car_id);
+
+CREATE INDEX idx_media_car_id
+    ON media(car_id);
+
+CREATE INDEX idx_media_media_type_id
+    ON media(media_type_id);
+
+CREATE INDEX idx_sales_client_id
+    ON sales(client_id);
+
+CREATE INDEX idx_sales_dealer_id
+    ON sales(dealer_id);
+
+CREATE INDEX idx_sales_sold_at
+    ON sales(sold_at);
 
 -- ============================================================
 -- Documentation
